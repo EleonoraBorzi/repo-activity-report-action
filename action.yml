@@ -1,1 +1,12 @@
-
+name: Activity Report Action 
+inputs:
+  github-token: 
+    default: ${{ github.token }}
+    required: true
+      
+     
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+   - ${{ inputs.github-token }}}
