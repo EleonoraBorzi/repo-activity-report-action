@@ -38,11 +38,22 @@ def average_pr_response_time(url):
 def average_issue_response_time(url):
     print()
 
-def lizard():
+def lizard(include_warnings=False):
     stream = os.popen("lizard")
     output = stream.read()
-    print("lizard:\n")
-    print(output)
+    search_string = "Total nloc"
+    if include_warnings:
+        # Could also combine them by utilizing that '(cyclomatic_complexity > 15 or length > 1000 or nloc > 1000000 or parameter_count > 100)'
+        # appears in both cases. However then you need to do some extra work to include the beginning of the line, since we can't just continue from where this
+        # substring is found.
+        alternative_string1 = "!!!! Warnings"
+        alternative_string2 = "No thresholds exceeded"
+        if alternative_string1 in output:
+            search_string = alternative_string1
+        elif alternative_string2 in output:
+            search_string = alternative_string2
+    return output[output.index(search_string) : ]
+    
 
 def main():
     #repo_name = sys.argv[1]
