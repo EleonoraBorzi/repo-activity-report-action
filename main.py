@@ -33,22 +33,27 @@ def list_reviwed_pr(url):
 # Merged implies closed, but it can be closed without being merged. Date is 'None' if it isn't merged/closed.
 def average_pr_close_time(url):
     url = url + "/pulls"
-    params = {"state":"all"}
+    page_num = 1
+    params = {"state":"all", "per_page":"100", "page":page_num}
     payload = requests.get(url=url, headers=headers, params=params).json()
     closed_durations = []
     merged_durations = []
     open_durations = []
-    for it in payload:
-        created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        if it["merged_at"] is not None:
-            merged_date = datetime.datetime.strptime(it["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
-            merged_durations.append((merged_date - created_date).total_seconds())
-        elif it["closed_at"] is not None:
-            closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
-            closed_durations.append((closed_date - created_date).total_seconds())
-        else:
-            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-            open_durations.append((today_formatted - created_date).total_seconds())
+    while len(payload) > 0:
+        for it in payload:
+            created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            if it["merged_at"] is not None:
+                merged_date = datetime.datetime.strptime(it["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
+                merged_durations.append((merged_date - created_date).total_seconds())
+            elif it["closed_at"] is not None:
+                closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
+                closed_durations.append((closed_date - created_date).total_seconds())
+            else:
+                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+                open_durations.append((today_formatted - created_date).total_seconds())
+        page_num += 1
+        params = {"state":"all", "per_page":"100", "page":page_num}
+        payload = requests.get(url=url, headers=headers, params=params).json()
 
     average_non_merge_close_time = float(sum(closed_durations)) / (len(closed_durations))
     average_merge_time = float(sum(merged_durations)) / (len(merged_durations))
@@ -60,21 +65,26 @@ def average_pr_close_time(url):
 # Can probably be combined with the PR one, especially since this also has access to the pull requests
 def average_issue_close_time(url):
     url = url + "/issues"
-    params = {"state":"all"}
+    page_num = 1
+    params = {"state":"all", "per_page":"100", "page":page_num}
     payload = requests.get(url=url, headers=headers, params=params).json()
     closed_durations = []
     open_durations = []
-    for it in payload:
-        if "pull_request" in it:
-            # 'issues' return both issues and pull requests, so we have to get rid of the pull requests
-            continue
-        created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        if it["closed_at"] is not None:
-            closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
-            closed_durations.append((closed_date - created_date).total_seconds())
-        else:
-            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-            open_durations.append((today_formatted - created_date).total_seconds())
+    while len(payload) > 0:
+        for it in payload:
+            if "pull_request" in it:
+                # 'issues' return both issues and pull requests, so we have to get rid of the pull requests
+                continue
+            created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            if it["closed_at"] is not None:
+                closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
+                closed_durations.append((closed_date - created_date).total_seconds())
+            else:
+                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+                open_durations.append((today_formatted - created_date).total_seconds())
+        page_num += 1
+        params = {"state":"all", "per_page":"100", "page":page_num}
+        payload = requests.get(url=url, headers=headers, params=params).json()
 
     average_non_merge_close_time = float(sum(closed_durations)) / (len(closed_durations))
     average_still_open_time = float(sum(open_durations)) / (len(open_durations))
