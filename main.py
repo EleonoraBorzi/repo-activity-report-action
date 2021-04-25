@@ -50,9 +50,42 @@ def get_first_contributor_issue_comment(item : "json object of issue", contribut
             break
         page_num_comments += 1
         params_comments = {"per_page":"100", "page":page_num_comments}
-        payload_comments = requests.get(url=it["comments_url"], headers=headers, params=params_comments).json()
+        payload_comments = requests.get(url=item["comments_url"], headers=headers, params=params_comments).json()
     
     return contributor_comment, comment_timestamp
+
+def get_first_contributor_pull_comment(url : str, item : "json object of pull request", contributors : "list of str") -> "bool, datetime | None":
+    contributor_comment, comment_timestamp = get_first_contributor_issue_comment(item, contributors)
+
+    contributor_review_comment = False
+    review_comment_timestamp = None
+    page_num_comments = 1
+    review_url = url + "pulls/" + item["number"] + "/comments"
+    params_comments = {"per_page":"100", "page":page_num_comments}
+    review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
+    
+    # "By default, review comments are in ascending order by ID."
+    # I believe this means that we are given the older ones first?
+    while len(review_comments) > 0:
+        for comment in review_comments:
+            if comment["user"]["login"] in contributors:
+                contributor_review_comment = True
+                review_comment_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                break
+        if contributor_review_comment:
+            break
+        page_num_comments += 1
+        params_comments = {"per_page":"100", "page":page_num_comments}
+        review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
+    
+    # Do we also count commit comments?
+    if contributor_comment and contributor_review_comment:
+        return True, min(comment_timestamp, review_comment_timestamp)
+    elif contributor_comment:
+        return True, comment_timestamp
+    elif contributor_review_comment:
+        return True, review_comment_timestamp
+    return False, None
 
 def get_non_contributor_issues_and_pr(url, contributors):
     url = url + "/issues"
@@ -102,9 +135,31 @@ def average_pr_close_time(url):
 def average_issue_close_time(url):
     print()
 
-def average_pr_response_time(url, contributors):
-    # Need issues comments, review comments and commit comments 
-    print()
+# Could be combined with issue average response
+def average_pr_response_time(url, pulls, contributors):
+    responded_durations = []
+    not_responded_durations = []
+    
+    for pull in pulls:
+        print("Author association: ", pull["author_association"])
+        pull_created_date = datetime.datetime.strptime(pull["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+        if pull["comments"] == 0:
+            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+            not_responded_durations.append((today_formatted - pull_created_date).total_seconds())
+        else:
+            contributor_comment, comment_timestamp = get_first_contributor_pull_comment(url, pull, contributors)
+            if contributor_comment:
+                responded_durations.append((comment_timestamp - pull_created_date).total_seconds())
+            else:
+                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+                not_responded_durations.append((today_formatted - pull_created_date).total_seconds())
+        print(pull["url"], pull["comments"])
+
+
+    average_responded_time = float(sum(responded_durations)) / (len(responded_durations))
+    average_not_responded_time = float(sum(not_responded_durations)) / (len(not_responded_durations))
+    print("Average time until pull request is commented on by contributor: ", average_responded_time)
+    print("Average time opened for pull requests without contributor comments: ", average_not_responded_time)
 
 def average_issue_response_time(url, issues, contributors):
     responded_durations = []
@@ -131,8 +186,6 @@ def average_issue_response_time(url, issues, contributors):
     print("Average time until issue is commented on by contributor: ", average_responded_time)
     print("Average time opened for issues without contributor comments: ", average_not_responded_time)
 
-
-
 def lizard():
     stream = os.popen("lizard")
     output = stream.read()
@@ -158,7 +211,7 @@ def main():
     #average_pr_close_time(url)
     #average_issue_close_time(url)
     issues, pulls = get_non_contributor_issues_and_pr(url, contributors)
-    #average_pr_response_time(url)
+    average_pr_response_time(url, pulls, contributors)
     average_issue_response_time(url, issues, contributors)
     #lizard()
 
