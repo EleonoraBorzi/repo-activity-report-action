@@ -1,0 +1,2 @@
+lizard==1.17.7
+requests==2.25.1
