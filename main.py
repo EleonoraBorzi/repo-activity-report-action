@@ -99,8 +99,29 @@ def reviewed_pr(url):
     payload = requests.get(url=url, headers=headers).json()
     #print(payload)
 
-def reviewed_issues(url):
-    print()
+
+def unreviewed_issues(url):
+    url = url + "/issues"
+    page =1
+    params = {"state":"all", "per_page":"100", "page":page}
+    payload = requests.get(url=url, headers=headers, params=params).json()
+    count = 0
+    issues = []
+    while(len(payload)>0):
+        print(payload)
+        for item in payload: 
+            if (item["comments"] == 0):
+                issues.append(str(item['number']))
+                count+=1
+        print(count, issues)
+        print(page)
+        page+=1
+        params = {"state":"all", "per_page":"100", "page":page}
+        payload = requests.get(url=url, headers=headers, params=params).json()
+    print("The number of unreviwed issues is:" + count)
+    print("The unreviwed issues are:" + issues)
+    return [count, issues]
+
 
 def list_reviwed_issues(url):
     print()
@@ -238,7 +259,7 @@ def lizard(include_warnings=False):
         elif alternative_string2 in output:
             search_string = alternative_string2
     return output[output.index(search_string) : ]
-    
+   
 
 def main():
     #repo_name = sys.argv[1]
@@ -251,10 +272,10 @@ def main():
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
-    #reviewed_pr(url)
-    #reviewed_issues(url)
+    #unreviewed_pr(url)
+    #unreviewed_issues(url)
     #list_reviwed_issues(url)
-    #list_reviwed_pr(url)
+    #list_unreviwed_pr(url)
     #average_pr_close_time(url)
     #average_issue_close_time(url)
     issues, pulls = get_non_collaborator_issues_and_pr(url)
