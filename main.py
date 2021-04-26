@@ -120,126 +120,53 @@ def unreviewed_issues(issue_list):
     return (issue_nr, report)
 
 
-def list_reviwed_issues(url):
-    print()
-
-def list_reviwed_pr(url):
-    print()
-
-# https://docs.github.com/en/rest/reference/pulls
-# https://stackoverflow.com/questions/17423598/how-can-i-get-a-list-of-all-pull-requests-for-a-repo-through-the-github-api 
-# https://stackoverflow.com/questions/18795713/parse-and-format-the-date-from-the-github-api-in-python/18795714 
-# Merged implies closed, but it can be closed without being merged. Date is 'None' if it isn't merged/closed.
-def average_pr_close_time(url):
-    url = url + "/pulls"
-    page_num = 1
-    params = {"state":"all", "per_page":"100", "page":page_num}
-    payload = requests.get(url=url, headers=headers, params=params).json()
-    closed_durations = []
-    merged_durations = []
-    open_durations = []
-    while len(payload) > 0:
-        for it in payload:
-            created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-            if it["merged_at"] is not None:
-                merged_date = datetime.datetime.strptime(it["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
-                merged_durations.append((merged_date - created_date).total_seconds())
-            elif it["closed_at"] is not None:
-                closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
-                closed_durations.append((closed_date - created_date).total_seconds())
-            else:
-                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-                open_durations.append((today_formatted - created_date).total_seconds())
-        page_num += 1
-        params = {"state":"all", "per_page":"100", "page":page_num}
-        payload = requests.get(url=url, headers=headers, params=params).json()
-
-    average_non_merge_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
-    average_merge_time =  0 if len(merged_durations) == 0 else float(sum(merged_durations)) / (len(merged_durations))
-    average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
-    print("Average time until PR closed but not merged: ", average_non_merge_close_time)
-    print("Average time until PR merged: ", average_merge_time)
-    print("Average time opened for still open PRs: ", average_still_open_time)
-
-# Can probably be combined with the PR one, especially since this also has access to the pull requests
-def average_issue_close_time(url):
-    url = url + "/issues"
-    page_num = 1
-    params = {"state":"all", "per_page":"100", "page":page_num}
-    payload = requests.get(url=url, headers=headers, params=params).json()
+# Takes a list of either issues or pull requests as issue objects and returns the average durations of them being open
+# in two categories: the ones that are closed and the ones that are still open.
+# Here we don't differentiate between if a pull reqeust was only closed or also merged (merged implies closed). 
+def average_close_time(issue_objects):
     closed_durations = []
     open_durations = []
-    while len(payload) > 0:
-        for it in payload:
-            if "pull_request" in it:
-                # 'issues' return both issues and pull requests, so we have to get rid of the pull requests
-                continue
-            created_date = datetime.datetime.strptime(it["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-            if it["closed_at"] is not None:
-                closed_date = datetime.datetime.strptime(it["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
-                closed_durations.append((closed_date - created_date).total_seconds())
-            else:
-                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-                open_durations.append((today_formatted - created_date).total_seconds())
-        page_num += 1
-        params = {"state":"all", "per_page":"100", "page":page_num}
-        payload = requests.get(url=url, headers=headers, params=params).json()
+    for item in issue_objects:
+        created_date = datetime.datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+        # Date is 'None' if it isn't closed.
+        if item["closed_at"] is not None:
+            closed_date = datetime.datetime.strptime(item["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
+            closed_durations.append((closed_date - created_date).total_seconds())
+        else:
+            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+            open_durations.append((today_formatted - created_date).total_seconds())
 
-    average_non_merge_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
+    average_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
     average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
-    print("Average time until issue closed: ", average_non_merge_close_time)
-    print("Average time opened for still open issues: ", average_still_open_time)
+    # Remove print statements
+    print("Average time until PR/Issue closed: ", average_close_time)
+    print("Average time opened for still open PRs/Issues: ", average_still_open_time)
+    return average_close_time, average_still_open_time
 
-# Could be combined with issue average response
-def average_pr_response_time(url, pulls):
+# The input is issues or pull requests as issue objects that are split over two lists.
+# The first list consists of tuples of the issues/pull requests as well as timestamps, whereas the second list only consists of issues/pull requests.
+# The parameters are inteded to be used to split issues/pull request into those that have "eligeble comments" and those that don't, 
+# and then this function calculate the average time from that the issue/pull request was created until the timestamp (representing the "eligeble comment")
+# for the first list, and the average time from that the issue/pull request was created until today for the second list.
+def average_response_time(commented_objects, uncommented_objects):
     responded_durations = []
     not_responded_durations = []
     
-    for pull in pulls:
-        print("Author association: ", pull["author_association"])
-        pull_created_date = datetime.datetime.strptime(pull["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        if pull["comments"] == 0:
-            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-            not_responded_durations.append((today_formatted - pull_created_date).total_seconds())
-        else:
-            collaborator_comment, comment_timestamp = get_first_collaborator_pr_comment(url, pull)
-            if collaborator_comment:
-                responded_durations.append((comment_timestamp - pull_created_date).total_seconds())
-            else:
-                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-                not_responded_durations.append((today_formatted - pull_created_date).total_seconds())
-        print(pull["url"], pull["comments"])
+    for item, comment_timestamp in commented_objects:
+        created_date = datetime.datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+        responded_durations.append((comment_timestamp - created_date).total_seconds())
 
+    for item in uncommented_objects:
+        created_date = datetime.datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+        today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+        not_responded_durations.append((today_formatted - created_date).total_seconds())
 
     average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
+    # Remove print statement
     print("Average time until pull request is commented on by collaborator: ", average_responded_time)
     print("Average time opened for pull requests without collaborator comments: ", average_not_responded_time)
-
-def average_issue_response_time(url, issues):
-    responded_durations = []
-    not_responded_durations = []
-    
-    for issue in issues:
-        print("Author association: ", issue["author_association"])
-        issue_created_date = datetime.datetime.strptime(issue["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        if issue["comments"] == 0:
-            today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-            not_responded_durations.append((today_formatted - issue_created_date).total_seconds())
-        else:
-            collaborator_comment, comment_timestamp = get_first_collaborator_issue_comment(issue)
-            if collaborator_comment:
-                responded_durations.append((comment_timestamp - issue_created_date).total_seconds())
-            else:
-                today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-                not_responded_durations.append((today_formatted - issue_created_date).total_seconds())
-        print(issue["url"], issue["comments"])
-
-
-    average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
-    average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
-    print("Average time until issue is commented on by collaborator: ", average_responded_time)
-    print("Average time opened for issues without collaborator comments: ", average_not_responded_time)
+    return average_responded_time, average_not_responded_time
 
 def lizard(include_warnings=False):
     stream = os.popen("lizard")
@@ -257,10 +184,9 @@ def lizard(include_warnings=False):
             search_string = alternative_string2
     return output[output.index(search_string) : ]
    
-
 def main():
     #repo_name = sys.argv[1]
-    #issue_number = sys.argv[2]
+    #issue_number_to_post = sys.argv[2]
     #git_token = sys.argv[3]
     #url = "https://api.github.com/repo/" + str(repo_name)
 
@@ -294,18 +220,16 @@ def main():
             else:
                 uncommented_pr_list.append(pr)
     
-    unreviewed_pr(uncommented_pr_list)
-    (count, issue_list) = unreviewed_issues(uncommented_issue_list)
-    list_reviwed_issues(url)
-    list_unreviwed_pr(url)
-    average_pr_close_time(url)
-    average_issue_close_time(url)
-    average_pr_response_time(url, prs)
-    average_issue_response_time(url, issues)
+
+    (pr_list, report)=unreviewed_pr(uncommented_pr_list)
+    (issue_list, report) = unreviewed_issues(uncommented_issue_list)
+    average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
+    average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
+    average_response_time(commented_pr_list, uncommented_pr_list)
     #lizard(True)
 
     report = "Report"
-    #write_comment(git_token, repo_name, issue_number, report)
+    #write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
 if __name__ == "__main__":
