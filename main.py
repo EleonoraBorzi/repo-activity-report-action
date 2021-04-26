@@ -201,6 +201,9 @@ def average_response_time(commented_objects, uncommented_objects):
     return average_responded_time, average_not_responded_time
 
 def lizard(include_warnings=False):
+    path = os.popen("cd /github/workspace")
+    pwd = os.popen("pwd")
+    print(pwd.read())
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
@@ -223,48 +226,51 @@ def main():
     #url = "https://api.github.com/repo/" + str(repo_name)
 
     #dummy input
-    repo_name = "EleonoraBorzis/group-composition-action" #"jhy/jsoup"
-    url = "https://api.github.com/repos/" + str(repo_name)
+    # repo_name = "EleonoraBorzis/group-composition-action" #"jhy/jsoup"
+    # url = "https://api.github.com/repos/" + str(repo_name)
 
 
-    issues, prs = get_non_collaborator_issues_and_pr(url)
-    commented_issue_list = []
-    uncommented_issue_list = []
-    commented_pr_list = []
-    uncommented_pr_list = []
-    for issue in issues:
-        if issue["comments"] == 0:
-            uncommented_issue_list.append(issue)
-        else:
-            collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
-            if collaborator_commented:
-                commented_issue_list.append((issue, comment_timestamp))
-            else:
-                uncommented_issue_list.append(issue)
+    # issues, prs = get_non_collaborator_issues_and_pr(url)
+    # commented_issue_list = []
+    # uncommented_issue_list = []
+    # commented_pr_list = []
+    # uncommented_pr_list = []
+    # for issue in issues:
+    #     if issue["comments"] == 0:
+    #         uncommented_issue_list.append(issue)
+    #     else:
+    #         collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
+    #         if collaborator_commented:
+    #             commented_issue_list.append((issue, comment_timestamp))
+    #         else:
+    #             uncommented_issue_list.append(issue)
     
-    for pr in prs:
-        if pr["comments"] == 0:
-            uncommented_pr_list.append(pr)
-        else:
-            collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
-            if collaborator_commented:
-                commented_pr_list.append((pr, comment_timestamp))
-            else:
-                uncommented_pr_list.append(pr)
+    # for pr in prs:
+    #     if pr["comments"] == 0:
+    #         uncommented_pr_list.append(pr)
+    #     else:
+    #         collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
+    #         if collaborator_commented:
+    #             commented_pr_list.append((pr, comment_timestamp))
+    #         else:
+    #             uncommented_pr_list.append(pr)
     
 
-    (pr_list, report)=unreviewed_pr(uncommented_pr_list)
-    (issue_list, report) = unreviewed_issues(uncommented_issue_list)
-    average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
-    average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
-    average_response_time(commented_pr_list, uncommented_pr_list)
-    #lizard(True)
+    # (pr_list, report)=unreviewed_pr(uncommented_pr_list)
+    # (issue_list, report) = unreviewed_issues(uncommented_issue_list)
+    # average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
+    # average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
+    # average_response_time(commented_pr_list, uncommented_pr_list)
+    report = lizard(True)
+
+
 
     report = "Report"
     if not get_requests_success:
         prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
         prepend += "This might have happened because of too much data being requested.\n\n"
         report = prepend + report
+
     #write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
