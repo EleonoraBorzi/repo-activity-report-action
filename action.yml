@@ -1,4 +1,4 @@
-name: Activity Report Action 
+name: Repo Activity Report Action 
 inputs:
   github-token: 
     default: ${{ github.token }}
