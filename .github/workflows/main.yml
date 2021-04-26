@@ -8,5 +8,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: EleonoraBorzis/repo-activity-report-action@Lizard
+      - uses: EleonoraBorzis/repo-activity-report-action@main
        
