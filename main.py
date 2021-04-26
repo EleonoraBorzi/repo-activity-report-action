@@ -6,16 +6,23 @@ import os
 import datetime
 
 headers = {"Accept": "application/vnd.github.v3+json"}
+get_requests_success = True # Is set to false if any API call gets a return code other than 200
 
 # Returns a bool indicating if there was at least one comment from a collaborator. If true, then a timestamp of the comment is returned as well.
 # If false then the second value is None.
 # The returned timestamp is of the earliest eligible comment. 
 def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool, datetime | None":
+    global get_requests_success
     collaborator_comment = False
     comment_timestamp = None
     page_num_comments = 1
     params_comments = {"per_page":"100", "page":page_num_comments}
-    payload_comments = requests.get(url=item["comments_url"], headers=headers, params=params_comments).json()
+    response = requests.get(url=item["comments_url"], headers=headers, params=params_comments)
+
+    if response.status_code != 200:
+        get_requests_success = False
+        return collaborator_comment, comment_timestamp
+    payload_comments = response.json()
     
     # "Issue Comments are ordered by ascending ID."
     # I believe this means that we are given the older ones first?
@@ -29,7 +36,11 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
             break
         page_num_comments += 1
         params_comments = {"per_page":"100", "page":page_num_comments}
-        payload_comments = requests.get(url=item["comments_url"], headers=headers, params=params_comments).json()
+        response = requests.get(url=item["comments_url"], headers=headers, params=params_comments)
+        if response.status_code != 200:
+            get_requests_success = False
+            return collaborator_comment, comment_timestamp
+        payload_comments = response.json()
     
     return collaborator_comment, comment_timestamp
 
@@ -37,16 +48,21 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
 # If false then the second value is None.
 # The returned timestamp is of the earliest eligible comment. 
 def get_first_collaborator_pr_comment(url : str, item : "json object of pull request") -> "bool, datetime | None":
+    global get_requests_success
     collaborator_comment, comment_timestamp = get_first_collaborator_issue_comment(item)
 
     collaborator_review_comment = False
     review_comment_timestamp = None
     page_num_comments = 1
     review_url = url + "/pulls/" + str(item["number"]) + "/comments"
-    print(review_url)
     params_comments = {"per_page":"100", "page":page_num_comments}
-    review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
-    print(review_comments)
+    response = requests.get(url=review_url, headers=headers, params=params_comments)
+
+    if response.status_code != 200:
+        get_requests_success = False
+        return collaborator_comment, comment_timestamp
+    review_comments = response.json()
+    
     # "By default, review comments are in ascending order by ID."
     # I believe this means that we are given the older ones first?
     while len(review_comments) > 0:
@@ -59,7 +75,11 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
             break
         page_num_comments += 1
         params_comments = {"per_page":"100", "page":page_num_comments}
-        review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
+        response = requests.get(url=review_url, headers=headers, params=params_comments)
+        if response.status_code != 200:
+            get_requests_success = False
+            return collaborator_comment, comment_timestamp
+        review_comments = response.json()
     
     # Do we also count commit comments?
     if collaborator_comment and collaborator_review_comment:
@@ -73,10 +93,17 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
 # Returns two lists: the first one is a list of issue that aren't created by collaborators or the owner, while the second is the respective list
 # for pull requests. Note that the pull requests are not real pull requests but rather their issue representations.
 def get_non_collaborator_issues_and_pr(url):
+    global get_requests_success
     url = url + "/issues"
     page_num = 1
     params = {"state":"all", "per_page":"100", "page":page_num}
-    payload = requests.get(url=url, headers=headers, params=params).json()
+    response = requests.get(url=url, headers=headers, params=params)
+    
+    if response.status_code != 200:
+        get_requests_success = False
+        return [], []
+    payload = response.json()
+
     issues = []
     pull_requests = []
     while len(payload) > 0:
@@ -88,9 +115,14 @@ def get_non_collaborator_issues_and_pr(url):
                 pull_requests.append(item)
             else:
                 issues.append(item)
+        
         page_num += 1
         params = {"state":"all", "per_page":"100", "page":page_num}
-        payload = requests.get(url=url, headers=headers, params=params).json()
+        response = requests.get(url=url, headers=headers, params=params)
+        if response.status_code != 200:
+            get_requests_success = False
+            return issues, pull_requests
+        payload = response.json()
     
     return issues, pull_requests
 
@@ -122,7 +154,7 @@ def unreviewed_issues(issue_list):
 
 # Takes a list of either issues or pull requests as issue objects and returns the average durations of them being open
 # in two categories: the ones that are closed and the ones that are still open.
-# Here we don't differentiate between if a pull reqeust was only closed or also merged (merged implies closed). 
+# Here we don't differentiate between if a pull request was only closed or also merged (merged implies closed). 
 def average_close_time(issue_objects):
     closed_durations = []
     open_durations = []
@@ -231,7 +263,14 @@ def main():
     # average_response_time(commented_pr_list, uncommented_pr_list)
     report = lizard(True)
 
-    #report = "Report"
+
+
+    report = "Report"
+    if not get_requests_success:
+        prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
+        prepend += "This might have happened because of too much data being requested.\n\n"
+        report = prepend + report
+
     #write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
