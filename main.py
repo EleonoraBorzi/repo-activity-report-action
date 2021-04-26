@@ -42,7 +42,7 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
     collaborator_review_comment = False
     review_comment_timestamp = None
     page_num_comments = 1
-    review_url = url + "pulls/" + item["number"] + "/comments"
+    review_url = url + "/pulls/" + str(item["number"]) + "/comments"
     params_comments = {"per_page":"100", "page":page_num_comments}
     review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
     
