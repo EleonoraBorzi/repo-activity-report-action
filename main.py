@@ -33,7 +33,10 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
     
     return collaborator_comment, comment_timestamp
 
-def get_first_collaborator_pull_comment(url : str, item : "json object of pull request") -> "bool, datetime | None":
+# Returns a bool indicating if there was at least one comment from a collaborator. If true, then a timestamp of the comment is returned as well.
+# If false then the second value is None.
+# The returned timestamp is of the earliest eligible comment. 
+def get_first_collaborator_pr_comment(url : str, item : "json object of pull request") -> "bool, datetime | None":
     collaborator_comment, comment_timestamp = get_first_collaborator_issue_comment(item)
 
     collaborator_review_comment = False
@@ -66,6 +69,8 @@ def get_first_collaborator_pull_comment(url : str, item : "json object of pull r
         return True, review_comment_timestamp
     return False, None
 
+# Returns two lists: the first one is a list of issue that aren't created by collaborators or the owner, while the second is the respective list
+# for pull requests. Note that the pull requests are not real pull requests but rather their issue representations.
 def get_non_collaborator_issues_and_pr(url):
     url = url + "/issues"
     page_num = 1
@@ -205,7 +210,7 @@ def average_pr_response_time(url, pulls):
             today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
             not_responded_durations.append((today_formatted - pull_created_date).total_seconds())
         else:
-            collaborator_comment, comment_timestamp = get_first_collaborator_pull_comment(url, pull)
+            collaborator_comment, comment_timestamp = get_first_collaborator_pr_comment(url, pull)
             if collaborator_comment:
                 responded_durations.append((comment_timestamp - pull_created_date).total_seconds())
             else:
@@ -272,16 +277,39 @@ def main():
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
+    issues, prs = get_non_collaborator_issues_and_pr(url)
+    commented_issue_list = []
+    uncommented_issue_list = []
+    commented_pr_list = []
+    uncommented_pr_list = []
+    for issue in issues:
+        if issue["comments"] == 0:
+            uncommented_issue_list.append(issue)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
+            if collaborator_commented:
+                commented_issue_list.append((issue, comment_timestamp))
+            else:
+                uncommented_issue_list.append(issue)
+    
+    for pr in prs:
+        if pr["comments"] == 0:
+            uncommented_pr_list.append(pr)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
+            if collaborator_commented:
+                commented_pr_list.append((pr, comment_timestamp))
+            else:
+                uncommented_pr_list.append(pr)
     #unreviewed_pr(url)
     #unreviewed_issues(url)
     #list_reviwed_issues(url)
     #list_unreviwed_pr(url)
     #average_pr_close_time(url)
     #average_issue_close_time(url)
-    issues, pulls = get_non_collaborator_issues_and_pr(url)
-    average_pr_response_time(url, pulls)
+    average_pr_response_time(url, prs)
     average_issue_response_time(url, issues)
-    #lizard()
+    #lizard(True)
 
     report = "Report"
     #write_comment(git_token, repo_name, issue_number, report)
