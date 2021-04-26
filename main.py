@@ -42,10 +42,11 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
     collaborator_review_comment = False
     review_comment_timestamp = None
     page_num_comments = 1
-    review_url = url + "pulls/" + item["number"] + "/comments"
+    review_url = url + "/pulls/" + str(item["number"]) + "/comments"
+    print(review_url)
     params_comments = {"per_page":"100", "page":page_num_comments}
     review_comments = requests.get(url=review_url, headers=headers, params=params_comments).json()
-    
+    print(review_comments)
     # "By default, review comments are in ascending order by ID."
     # I believe this means that we are given the older ones first?
     while len(review_comments) > 0:
@@ -99,40 +100,25 @@ def write_comment(git_token, repo_name, issue_number, report):
     pr = repo.get_pull(issue_number)
     pr.create_issue_comment(report)
 
-def reviewed_pr(url):
-    url = url + "/pulls"
-    payload = requests.get(url=url, headers=headers).json()
-    #print(payload)
+def unreviewed_pr(pr_list):
+    pr_nr = []
+    for item in pr_list:
+        if (item["comments"] == 0):
+            pr_nr.append(str(item['number']))
+    report = ("The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
+    report = report + ("The unreviwed issues are:" + str(pr_nr) + "\n")
+    return (pr_nr, report)
 
 
-def unreviewed_issues(url):
-    url = url + "/issues"
-    page =1
-    params = {"state":"all", "per_page":"100", "page":page}
-    payload = requests.get(url=url, headers=headers, params=params).json()
-    count = 0
-    issues = []
-    while(len(payload)>0):
-        print(payload)
-        for item in payload: 
-            if (item["comments"] == 0):
-                issues.append(str(item['number']))
-                count+=1
-        print(count, issues)
-        print(page)
-        page+=1
-        params = {"state":"all", "per_page":"100", "page":page}
-        payload = requests.get(url=url, headers=headers, params=params).json()
-    print("The number of unreviwed issues is:" + count)
-    print("The unreviwed issues are:" + issues)
-    return [count, issues]
+def unreviewed_issues(issue_list):
+    issue_nr = []
+    for item in issue_list:
+        if (item["comments"] == 0):
+            issue_nr.append(str(item['number']))
+    report = ("The number of unreviwed issues is:" + str(len(issue_list))+ "\n")
+    report = report + ("The unreviwed issues are:" + str(issue_nr) + "\n")
+    return (issue_nr, report)
 
-
-def list_reviwed_issues(url):
-    print()
-
-def list_reviwed_pr(url):
-    print()
 
 # Takes a list of either issues or pull requests as issue objects and returns the average durations of them being open
 # in two categories: the ones that are closed and the ones that are still open.
@@ -205,7 +191,7 @@ def main():
     #url = "https://api.github.com/repo/" + str(repo_name)
 
     #dummy input
-    repo_name = "EleonoraBorzis/group-validity-action" #"jhy/jsoup"
+    repo_name = "EleonoraBorzis/group-composition-action" #"jhy/jsoup"
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
@@ -234,14 +220,12 @@ def main():
             else:
                 uncommented_pr_list.append(pr)
     
-    #unreviewed_pr(url)
-    #unreviewed_issues(url)
-    #list_reviwed_issues(url)
-    #list_unreviwed_pr(url)
+
+    (pr_list, report)=unreviewed_pr(uncommented_pr_list)
+    (issue_list, report) = unreviewed_issues(uncommented_issue_list)
     average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
     average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
     average_response_time(commented_pr_list, uncommented_pr_list)
-    average_response_time(commented_issue_list, uncommented_issue_list)
     #lizard(True)
 
     report = "Report"
