@@ -293,9 +293,7 @@ def main():
                 commented_pr_list.append((pr, comment_timestamp))
             else:
                 uncommented_pr_list.append(pr)
-    print(uncommented_pr_list)
-    print(len(uncommented_pr_list))
-    print(uncommented_pr_list[0])
+    
     unreviewed_pr(uncommented_pr_list)
     (count, issue_list) = unreviewed_issues(uncommented_issue_list)
     list_reviwed_issues(url)
