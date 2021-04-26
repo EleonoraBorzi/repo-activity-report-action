@@ -90,6 +90,179 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
         return True, review_comment_timestamp
     return False, None
 
+# Returns four lists: issues that have been commented, the remaning issues, pull requests that have been commented, and the remaining pull requests.
+# The lists of commented issues and pull requests conssits of pairs where the first item is the issue/pull request and the second the timestamp of the comment.
+# The other two lists simply consist of the issues/pull requests.
+# The pull requests are treated in their issue representation.
+# An issue/pull request is considered commented if it has a comment from a contributor or the owner of the repo.
+# The returned timestamp is from the earliest eligible comment.
+def get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name):
+    global get_requests_success
+
+    review_url = url + "/issues/comments"
+    page_num_comments = 1
+    params_comments = {"per_page":"100", "page":page_num_comments}
+    response = requests.get(url=review_url, headers=headers, params=params_comments)
+
+    if response.status_code != 200:
+        get_requests_success = False
+        return [], [], [], []
+    review_comments = response.json()
+    
+
+    commented_issues_map = {}
+    commented_prs_map = {}
+
+    while len(review_comments) > 0:
+        for comment in review_comments:
+            # The number isn't readily available, so we have to extract it from a link. Example: 
+            # "issue_url": "https://api.github.com/repos/EleonoraBorzis/group-composition-action/issues/10",
+            # Similar for both pull requests and issues
+            url = comment["issue_url"]
+            search_term = "issues/"
+            number = url[url.index(search_term) + len(search_term) : ]
+            
+            # Similarly it isn't readily available if it is an issue or a pull request. Example:
+            # "html_url": "https://github.com/EleonoraBorzis/group-composition-action/pull/10#issuecomment-810912871",
+            url = comment["html_url"]
+            start_index = url.index(repo_name) + len(repo_name) + 1 # +1 to account for following slash
+            item_type = url[start_index : start_index + 4]
+
+            if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
+                new_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                
+                if item_type == "pull":
+                    if number in commented_prs_map:
+                        previous_timestamp = commented_prs_map[number]
+                        commented_prs_map[number] = min(previous_timestamp, new_timestamp)
+                    else:
+                        commented_prs_map[number] = new_timestamp
+
+                else:
+                    if number in commented_issues_map:
+                        previous_timestamp = commented_issues_map[number]
+                        commented_issues_map[number] = min(previous_timestamp, new_timestamp)
+                    else:
+                        commented_prs_map[number] = new_timestamp
+
+        page_num_comments += 1
+        params_comments = {"per_page":"100", "page":page_num_comments}
+        response = requests.get(url=review_url, headers=headers, params=params_comments)
+        if response.status_code != 200:
+            get_requests_success = False
+            return [], [], [], []
+        review_comments = response.json()
+
+    commented_issues = []
+    uncommented_issues = []
+    commented_prs = []
+    uncommented_prs = []
+
+    for issue in issues:
+        if issue["number"] in commented_issues_map:
+            commented_issues.append((issue, commented_issues_map[issue["number"]]))
+        else:
+            uncommented_issues.append(issue)
+    
+    for pr in prs:
+        if pr["number"] in commented_prs_map:
+            commented_prs.append((pr, commented_prs_map[pr["number"]]))
+        else:
+            uncommented_prs.append(pr)
+
+    return commented_issues, uncommented_issues, commented_prs, uncommented_prs
+
+# Optimized for when the amount of review comments is much larger than the amount of pull requests.
+def get_commented_and_uncommmented_issues(url, issues):
+    commented_issue_list = []
+    uncommented_issue_list = []
+    for issue in issues:
+        if issue["comments"] == 0:
+            uncommented_issue_list.append(issue)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
+            if collaborator_commented:
+                commented_issue_list.append((issue, comment_timestamp))
+            else:
+                uncommented_issue_list.append(issue)
+    return commented_issue_list, uncommented_issue_list
+
+# Returns two list, the first with all pull request that have been commented on by a contributor or the owner, and the second list is the remaining pull requests.
+# The first returned list is of pairs where the first object is the pull request and the second is the first timestamp of an eligible comment.
+# The second reutrned lsit si simple pull request objects.
+# The pull requests are in their issue json representation (both in arguments and in return). 
+def get_commented_and_uncommented_prs(url, commented_prs, uncommented_prs):
+    global get_requests_success
+
+    review_url = url + "/pulls/comments"
+    page_num_comments = 1
+    params_comments = {"per_page":"100", "page":page_num_comments}
+    response = requests.get(url=review_url, headers=headers, params=params_comments)
+
+    if response.status_code != 200:
+        get_requests_success = False
+        return [], []
+    review_comments = response.json()
+    
+    commented_prs_map = {}
+    uncommented_prs_set = set()
+    for pr, timestamp in commented_prs:
+        commented_prs_map[pr["number"]] = timestamp
+    for pr in uncommented_prs:
+        uncommented_prs_set.add(pr["number"])
+
+    while len(review_comments) > 0:
+        for comment in review_comments:
+            # The number isn't readily available, so we have to extract it from a link
+            pr_url = comment["pull_request_url"]
+            search_term = "pulls/"
+            pr_number = pr_url[pr_url.index(search_term) + len(search_term) : ]
+            if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
+                uncommented_prs_set.remove(pr_number)
+                new_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                if pr_number in commented_prs_map:
+                    previous_timestamp = commented_prs_map[pr_number]
+                    commented_prs_map[pr_number] = min(previous_timestamp, new_timestamp)
+                else:
+                    commented_prs_map[pr_number] = new_timestamp
+
+        page_num_comments += 1
+        params_comments = {"per_page":"100", "page":page_num_comments}
+        response = requests.get(url=review_url, headers=headers, params=params_comments)
+        if response.status_code != 200:
+            get_requests_success = False
+            return [], []
+        review_comments = response.json()
+
+    ret_commented = []
+    ret_uncommented = []
+
+    for pr in uncommented_prs:
+        if pr["number"] in commented_prs_map:
+            ret_commented.append((pr, commented_prs_map[pr["number"]]))
+        else:
+            ret_uncommented.append(pr)
+    for pr,_ in commented_prs:
+        ret_commented.append((pr, commented_prs_map[pr["number"]]))
+
+    return ret_commented, ret_uncommented
+
+# Optimized for when the amount of review comments is much larger than the amount of pull requests.
+def get_commented_and_uncommented_prs_alternative(url, prs):
+    commented_pr_list = []
+    uncommented_pr_list = []
+    for pr in prs:
+        if pr["comments"] == 0:
+            uncommented_pr_list.append(pr)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
+            if collaborator_commented:
+                commented_pr_list.append((pr, comment_timestamp))
+            else:
+                uncommented_pr_list.append(pr)
+    return commented_pr_list, uncommented_pr_list
+
+
 # Returns two lists: the first one is a list of issue that aren't created by collaborators or the owner, while the second is the respective list
 # for pull requests. Note that the pull requests are not real pull requests but rather their issue representations.
 def get_non_collaborator_issues_and_pr(url):
@@ -177,8 +350,8 @@ def average_close_time(issue_objects):
 
 # The input is issues or pull requests as issue objects that are split over two lists.
 # The first list consists of tuples of the issues/pull requests as well as timestamps, whereas the second list only consists of issues/pull requests.
-# The parameters are inteded to be used to split issues/pull request into those that have "eligeble comments" and those that don't, 
-# and then this function calculate the average time from that the issue/pull request was created until the timestamp (representing the "eligeble comment")
+# The parameters are inteded to be used to split issues/pull request into those that have "eligible comments" and those that don't, 
+# and then this function calculate the average time from that the issue/pull request was created until the timestamp (representing the "eligible comment")
 # for the first list, and the average time from that the issue/pull request was created until today for the second list.
 def average_response_time(commented_objects, uncommented_objects):
     responded_durations = []
@@ -228,29 +401,8 @@ def main():
 
 
     issues, prs = get_non_collaborator_issues_and_pr(url)
-    commented_issue_list = []
-    uncommented_issue_list = []
-    commented_pr_list = []
-    uncommented_pr_list = []
-    for issue in issues:
-        if issue["comments"] == 0:
-            uncommented_issue_list.append(issue)
-        else:
-            collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
-            if collaborator_commented:
-                commented_issue_list.append((issue, comment_timestamp))
-            else:
-                uncommented_issue_list.append(issue)
-    
-    for pr in prs:
-        if pr["comments"] == 0:
-            uncommented_pr_list.append(pr)
-        else:
-            collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
-            if collaborator_commented:
-                commented_pr_list.append((pr, comment_timestamp))
-            else:
-                uncommented_pr_list.append(pr)
+    commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
+    commented_pr_list, uncommented_pr_list = get_commented_and_uncommented_prs(url, preliminary_commented_pr_list, preliminary_uncommented_pr_list)
     
 
     (pr_list, report)=unreviewed_pr(uncommented_pr_list)
