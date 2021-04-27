@@ -233,38 +233,38 @@ def main():
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
-    # issues, prs = get_non_collaborator_issues_and_pr(url)
-    # commented_issue_list = []
-    # uncommented_issue_list = []
-    # commented_pr_list = []
-    # uncommented_pr_list = []
-    # for issue in issues:
-    #     if issue["comments"] == 0:
-    #         uncommented_issue_list.append(issue)
-    #     else:
-    #         collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
-    #         if collaborator_commented:
-    #             commented_issue_list.append((issue, comment_timestamp))
-    #         else:
-    #             uncommented_issue_list.append(issue)
+    issues, prs = get_non_collaborator_issues_and_pr(url)
+    commented_issue_list = []
+    uncommented_issue_list = []
+    commented_pr_list = []
+    uncommented_pr_list = []
+    for issue in issues:
+        if issue["comments"] == 0:
+            uncommented_issue_list.append(issue)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_issue_comment(issue)
+            if collaborator_commented:
+                commented_issue_list.append((issue, comment_timestamp))
+            else:
+                uncommented_issue_list.append(issue)
     
-    # for pr in prs:
-    #     if pr["comments"] == 0:
-    #         uncommented_pr_list.append(pr)
-    #     else:
-    #         collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
-    #         if collaborator_commented:
-    #             commented_pr_list.append((pr, comment_timestamp))
-    #         else:
-    #             uncommented_pr_list.append(pr)
+    for pr in prs:
+        if pr["comments"] == 0:
+            uncommented_pr_list.append(pr)
+        else:
+            collaborator_commented, comment_timestamp = get_first_collaborator_pr_comment(url, pr)
+            if collaborator_commented:
+                commented_pr_list.append((pr, comment_timestamp))
+            else:
+                uncommented_pr_list.append(pr)
     
 
-    # report = unreviewed_pr(uncommented_pr_list)
-    # report = report + unreviewed_issues(uncommented_issue_list)
-    # report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
-    # report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
-    # report = report + average_response_time(commented_pr_list, uncommented_pr_list)
-    # report = report  + "Lizard:" + "\n" + lizard(True)
+    report = unreviewed_pr(uncommented_pr_list)
+    report = report + unreviewed_issues(uncommented_issue_list)
+    report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
+    report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
+    report = report + average_response_time(commented_pr_list, uncommented_pr_list)
+    report = report  + "Lizard:" + "\n" + lizard(True)
 
 
     report = "Report"
