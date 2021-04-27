@@ -11,6 +11,6 @@ jobs:
       - uses: EleonoraBorzis/repo-activity-report-action@main
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          repo-name:  EleonoraBorzis/group-composition-action
-          issue-number: 10
+          repo-name:  EleonoraBorzis/repo-activity-report-action
+          issue-number: 12
        
