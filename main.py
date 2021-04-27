@@ -129,7 +129,7 @@ def get_non_collaborator_issues_and_pr(url):
 def write_comment(git_token, repo_name, issue_number, report):
     g = Github(git_token)
     repo = g.get_repo(repo_name)
-    pr = repo.get_pull(issue_number)
+    pr = repo.get_pull(int(issue_number))
     pr.create_issue_comment(report)
 
 def unreviewed_pr(pr_list):
