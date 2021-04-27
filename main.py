@@ -267,7 +267,7 @@ def main():
     report = report  + "Lizard:" + "\n" + lizard(True)
 
 
-    report = "Report"
+    #report = "Report"
     if not get_requests_success:
         prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
         prepend += "This might have happened because of too much data being requested.\n\n"
