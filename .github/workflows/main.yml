@@ -12,5 +12,5 @@ jobs:
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repo-name:  EleonoraBorzis/group-composition-action
-          issue-number: 10
+          issue-number: 12
        
