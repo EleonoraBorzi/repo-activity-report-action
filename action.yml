@@ -14,7 +14,7 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-   args:
+  args:
    - ${{ inputs.github-token }}
    - ${{ inputs.issue-number }}
    - ${{ inputs.repo-name }}
