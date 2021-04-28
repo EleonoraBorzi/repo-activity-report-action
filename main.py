@@ -141,7 +141,14 @@ def unreviewed_pr(pr_list):
         if (item["comments"] == 0):
             pr_nr.append(str(item['number']))
     report = ("#### The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
-    report = report + ("#### The unreviwed issues are:" + str(pr_nr) + "\n")
+    report = report + ("#### The unreviwed issues are: ")
+    count = 0
+    for i in pr_list:
+        report= report + str(i)
+        if(count>pr_list-1):
+            report= report + ","
+        count+=1 
+    report = report + "\n"
     return report
 
 
@@ -151,7 +158,15 @@ def unreviewed_issues(issue_list):
         if (item["comments"] == 0):
             issue_nr.append(str(item['number']))
     report = ("#### The number of unreviwed pull requests is:" + str(len(issue_list))+ "\n")
-    report = report + ("#### The unreviwed pull requests are:" + str(issue_nr) + "\n")
+    report = report + ("#### The unreviwed pull requests are: ")
+    count = 0
+    for i in issue_list:
+        report= report + str(i)
+        if(count>issue_list-1):
+            report= report + ","
+        count+=1 
+    report = report + "\n"
+  
     return report
 
 
@@ -220,7 +235,7 @@ def lizard(include_warnings=False, head_path="./head"):
             search_string = alternative_string1
         elif alternative_string2 in output:
             search_string = alternative_string2
-    return output[output.index(search_string) : ]
+    return ("```` " + output[output.index(search_string) : ] + " ````")
    
 def main():
     git_token = sys.argv[1]
