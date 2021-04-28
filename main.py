@@ -145,7 +145,7 @@ def unreviewed_pr(pr_list):
     count = 0
     for i in pr_list:
         report= report + str(i)
-        if(count>pr_list-1):
+        if(count<len(pr_list)-1):
             report= report + ","
         count+=1 
     report = report + "\n"
@@ -162,7 +162,7 @@ def unreviewed_issues(issue_list):
     count = 0
     for i in issue_list:
         report= report + str(i)
-        if(count>issue_list-1):
+        if(count<len(pr_list)-1):
             report= report + ","
         count+=1 
     report = report + "\n"
