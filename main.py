@@ -140,7 +140,7 @@ def unreviewed_pr(pr_list):
     for item in pr_list:
         if (item["comments"] == 0):
             pr_nr.append(str(item['number']))
-    report = ("#### The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
+    report = ("#### The number of unreviwed issues is: " + str(len(pr_list))+ "\n")
     report = report + ("#### The unreviwed issues are: ")
     count = 0
     for i in pr_nr:
@@ -157,7 +157,7 @@ def unreviewed_issues(issue_list):
     for item in issue_list:
         if (item["comments"] == 0):
             issue_nr.append(str(item['number']))
-    report = ("#### The number of unreviwed pull requests is:" + str(len(issue_list))+ "\n")
+    report = ("#### The number of unreviwed pull requests is: " + str(len(issue_list))+ "\n")
     report = report + ("#### The unreviwed pull requests are: ")
     count = 0
     for i in issue_nr:
