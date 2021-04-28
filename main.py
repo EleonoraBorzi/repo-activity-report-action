@@ -143,7 +143,7 @@ def unreviewed_pr(pr_list):
     report = ("#### The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
     report = report + ("#### The unreviwed issues are: ")
     count = 0
-    for i in pr_list:
+    for i in pr_nr:
         report= report + str(i)
         if(count<len(pr_list)-1):
             report= report + ","
@@ -160,7 +160,7 @@ def unreviewed_issues(issue_list):
     report = ("#### The number of unreviwed pull requests is:" + str(len(issue_list))+ "\n")
     report = report + ("#### The unreviwed pull requests are: ")
     count = 0
-    for i in issue_list:
+    for i in issue_nr:
         report= report + str(i)
         if(count<len(issue_list)-1):
             report= report + ","
