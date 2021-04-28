@@ -202,7 +202,7 @@ def average_response_time(commented_objects, uncommented_objects):
     report = report + ("Average time opened for pull requests without collaborator comments: " + str(average_not_responded_time//86400) + "days" +  "\n")
     return report
 
-def lizard(include_warnings=False, head_path):
+def lizard(include_warnings=False, head_path="./head"):
     path = os.popen("cd head_path")
     pwd = os.popen("pwd")
     print(pwd.read())
