@@ -202,8 +202,8 @@ def average_response_time(commented_objects, uncommented_objects):
     report = report + ("Average time opened for pull requests without collaborator comments: " + str(average_not_responded_time//86400) + "days" +  "\n")
     return report
 
-def lizard(include_warnings=False):
-    path = os.popen("cd /github/workspace")
+def lizard(include_warnings=False, head_path):
+    path = os.popen("cd head_path")
     pwd = os.popen("pwd")
     print(pwd.read())
     stream = os.popen("lizard")
@@ -258,13 +258,16 @@ def main():
             else:
                 uncommented_pr_list.append(pr)
     
+    head_path = "./head"
+    os.mkdir(head_path)
+    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch=main)
 
     report = unreviewed_pr(uncommented_pr_list)
     report = report + unreviewed_issues(uncommented_issue_list)
     report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
     report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
     report = report + average_response_time(commented_pr_list, uncommented_pr_list)
-    report = report  + "Lizard:" + "\n" + lizard(True)
+    report = report  + "Lizard:" + "\n" + lizard(True, head_path)
 
 
     #report = "Report"
@@ -273,6 +276,7 @@ def main():
         prepend += "This might have happened because of too much data being requested.\n\n"
         report = prepend + report
 
+    
     write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
