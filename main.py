@@ -261,7 +261,7 @@ def main():
     
     head_path = "./head"
     os.mkdir(head_path)
-    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch=main)
+    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
 
     report = unreviewed_pr(uncommented_pr_list)
     report = report + unreviewed_issues(uncommented_issue_list)
