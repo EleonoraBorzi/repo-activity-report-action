@@ -133,15 +133,15 @@ def write_comment(git_token, repo_name, issue_number, report):
     g = Github(git_token)
     repo = g.get_repo(repo_name)
     pr = repo.get_pull(int(issue_number))
-    pr.create_issue_comment("<p>" + report + "</p>")
+    pr.create_issue_comment(report)
 
 def unreviewed_pr(pr_list):
     pr_nr = []
     for item in pr_list:
         if (item["comments"] == 0):
             pr_nr.append(str(item['number']))
-    report = ("The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
-    report = report + ("The unreviwed issues are:" + str(pr_nr) + "\n")
+    report = ("<p>" + "The number of unreviwed issues is:" + str(len(pr_list)) + "</p>" + "\n")
+    report = report + ("<p>" +"The unreviwed issues are:" + str(pr_nr) + "</p>" + "\n")
     return report
 
 
@@ -150,8 +150,8 @@ def unreviewed_issues(issue_list):
     for item in issue_list:
         if (item["comments"] == 0):
             issue_nr.append(str(item['number']))
-    report = ("The number of unreviwed pull requests is:" + str(len(issue_list))+ "\n")
-    report = report + ("The unreviwed pull requests are:" + str(issue_nr) + "\n")
+    report = ("<p>" + "The number of unreviwed pull requests is:" + str(len(issue_list))+ "</p>" + "\n")
+    report = report + ("<p>" +"The unreviwed pull requests are:" + str(issue_nr) + "</p>" + "\n")
     return report
 
 
@@ -174,8 +174,8 @@ def average_close_time(issue_objects):
     average_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
     average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
     
-    report = ("Average time until PR/Issue closed: " + str(int(average_close_time//86400)) + " days" + "\n")
-    report = report + ("Average time opened for still open PRs/Issues: " + str(int(average_still_open_time//86400)) + " days"  + "\n")
+    report = ("<p>" +"Average time until PR/Issue closed: " + str(int(average_close_time//86400)) + " days" + "</p>" + "\n")
+    report = report + ("<p>" +"Average time opened for still open PRs/Issues: " + str(int(average_still_open_time//86400)) + " days" + "</p>" + "\n")
     return report
 
 # The input is issues or pull requests as issue objects that are split over two lists.
@@ -199,8 +199,8 @@ def average_response_time(commented_objects, uncommented_objects):
     average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
     
-    report = ("Average time until pull request is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" +  "\n")
-    report = report + ("Average time opened for pull requests without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
+    report = ("<p>" + "Average time until pull request is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" + "</p>" +  "\n")
+    report = report + ("<p>" + "Average time opened for pull requests without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" + "</p>" +  "\n")
     return report
 
 def lizard(include_warnings=False, head_path="./head"):
