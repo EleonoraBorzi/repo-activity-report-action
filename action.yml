@@ -1,12 +1,20 @@
-name: Activity Report Action 
-inputs:
-  github-token: 
+name: Repo Activity Report Action   
+inputs: 
+  github-token:
     default: ${{ github.token }}
     required: true
-      
+  issue-number:
+    description: The issue number where the report should posted on as a comment 
+    required: true
+  repo-name:
+    default: EleonoraBorzis/repo-activity-report-action
+    required: true
+
      
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-   - ${{ inputs.github-token }}}
+   - ${{ inputs.github-token }}
+   - ${{ inputs.issue-number }}
+   - ${{ inputs.repo-name }}

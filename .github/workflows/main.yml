@@ -7,6 +7,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: EleonoraBorzis/repo-activity-report-action@Lizard
+      - uses: EleonoraBorzis/repo-activity-report-action@main
+        with: 
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-name:  EleonoraBorzis/repo-activity-report-action
+          issue-number: 12
        

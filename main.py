@@ -1,13 +1,13 @@
 import requests
 import json 
 from github import Github
+from git import Repo
 import sys 
 import os
 import datetime
 
-with open("../access_token.txt") as f:
-    t = f.readline()[:-1]
-    headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+t} 
+
+headers = {"Accept": "application/vnd.github.v3+json"} 
 get_requests_success = True # Is set to false if any API call gets a return code other than 200
 
 # Returns a bool indicating if there was at least one comment from a collaborator. If true, then a timestamp of the comment is returned as well.
@@ -298,9 +298,11 @@ def get_non_collaborator_issues_and_pr(url):
     return issues, pull_requests
 
 def write_comment(git_token, repo_name, issue_number, report):
+    print(repo_name)
+    print(issue_number)
     g = Github(git_token)
     repo = g.get_repo(repo_name)
-    pr = repo.get_pull(issue_number)
+    pr = repo.get_pull(int(issue_number))
     pr.create_issue_comment(report)
 
 def unreviewed_pr(pr_list):
@@ -308,9 +310,16 @@ def unreviewed_pr(pr_list):
     for item in pr_list:
         if (item["comments"] == 0):
             pr_nr.append(str(item['number']))
-    report = ("The number of unreviwed issues is:" + str(len(pr_list))+ "\n")
-    report = report + ("The unreviwed issues are:" + str(pr_nr) + "\n")
-    return (pr_nr, report)
+    report = ("#### The number of unreviwed pull requests  is: " + str(len(pr_list))+ "\n")
+    report = report + ("#### The unreviwed pull requests are: ")
+    count = 0
+    for i in pr_nr:
+        report= report + str(i)
+        if(count<len(pr_list)-1):
+            report= report + ","
+        count+=1 
+    report = report + "\n"
+    return report
 
 
 def unreviewed_issues(issue_list):
@@ -318,9 +327,17 @@ def unreviewed_issues(issue_list):
     for item in issue_list:
         if (item["comments"] == 0):
             issue_nr.append(str(item['number']))
-    report = ("The number of unreviwed issues is:" + str(len(issue_list))+ "\n")
-    report = report + ("The unreviwed issues are:" + str(issue_nr) + "\n")
-    return (issue_nr, report)
+    report = ("#### The number of unreviwed issues is: " + str(len(issue_list))+ "\n")
+    report = report + ("#### The unreviwed issues are: ")
+    count = 0
+    for i in issue_nr:
+        report= report + str(i)
+        if(count<len(issue_list)-1):
+            report= report + ","
+        count+=1 
+    report = report + "\n"
+  
+    return report
 
 
 # Takes a list of either issues or pull requests as issue objects and returns the average durations of them being open
@@ -341,10 +358,10 @@ def average_close_time(issue_objects):
 
     average_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
     average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
-    # Remove print statements
-    print("Average time until PR/Issue closed: ", average_close_time)
-    print("Average time opened for still open PRs/Issues: ", average_still_open_time)
-    return average_close_time, average_still_open_time
+    
+    report = ("#### Average time until PR/Issue closed: " + str(int(average_close_time//86400)) + " days" + "\n")
+    report = report + ("#### Average time opened for still open PRs/Issues: " + str(int(average_still_open_time//86400)) + " days"  + "\n")
+    return report
 
 # The input is issues or pull requests as issue objects that are split over two lists.
 # The first list consists of tuples of the issues/pull requests as well as timestamps, whereas the second list only consists of issues/pull requests.
@@ -369,12 +386,15 @@ def average_response_time(commented_objects, uncommented_objects):
 
     average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
-    # Remove print statement
-    print("Average time until issue/pull request is commented on by collaborator: ", average_responded_time)
-    print("Average time opened for issues/pull requests without collaborator comments: ", average_not_responded_time)
-    return average_responded_time, average_not_responded_time
 
-def lizard(include_warnings=False):
+    report = ("#### Average time until issue/pull request is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" +  "\n")
+    report = report + ("#### Average time opened for issue/pull requests without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
+    return report
+
+def lizard(include_warnings=False, head_path="./head"):
+    path = os.popen("cd head_path")
+    pwd = os.popen("pwd")
+    print(pwd.read())
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
@@ -388,37 +408,39 @@ def lizard(include_warnings=False):
             search_string = alternative_string1
         elif alternative_string2 in output:
             search_string = alternative_string2
-    return output[output.index(search_string) : ]
+    return ("```` " + output[output.index(search_string) : ] + " ````")
    
 def main():
-    #repo_name = sys.argv[1]
-    #issue_number_to_post = sys.argv[2]
-    #git_token = sys.argv[3]
-    #url = "https://api.github.com/repo/" + str(repo_name)
+    git_token = sys.argv[1]
+    issue_number_to_post = sys.argv[2]
+    repo_name = sys.argv[3]
 
-    #dummy input
-    repo_name = "KTH/devops-course" #"EleonoraBorzis/group-composition-action" #"jhy/jsoup"
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
     issues, prs = get_non_collaborator_issues_and_pr(url)
+
     commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
     commented_pr_list, uncommented_pr_list = get_commented_and_uncommented_prs(url, preliminary_commented_pr_list, preliminary_uncommented_pr_list)
+ 
+    head_path = "./head"
+    os.mkdir(head_path)
+    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
 
-    (pr_list, report)=unreviewed_pr(uncommented_pr_list)
-    (issue_list, report) = unreviewed_issues(uncommented_issue_list)
-    average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
-    average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
-    average_response_time(commented_pr_list, uncommented_pr_list)
-    average_response_time(commented_issue_list, uncommented_issue_list)
-    #lizard(True)
+    report = unreviewed_pr(uncommented_pr_list)
+    report = report + unreviewed_issues(uncommented_issue_list)
+    report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
+    report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
+    report = report + average_response_time(commented_pr_list, uncommented_pr_list)
+    report = report + average_response_time(commented_issue_list, uncommented_issue_list)
+    report = report  + "Lizard:" + "\n" + lizard(True, head_path)
 
-    report = "Report"
     if not get_requests_success:
         prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
         prepend += "This might have happened because of too much data being requested.\n\n"
         report = prepend + report
-    #write_comment(git_token, repo_name, issue_number_to_post, report)
+    
+    write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
 if __name__ == "__main__":
