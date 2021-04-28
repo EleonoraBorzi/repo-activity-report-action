@@ -5,7 +5,9 @@ import sys
 import os
 import datetime
 
-headers = {"Accept": "application/vnd.github.v3+json"}
+with open("../access_token.txt") as f:
+    t = f.readline()[:-1]
+    headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+t} 
 get_requests_success = True # Is set to false if any API call gets a return code other than 200
 
 # Returns a bool indicating if there was at least one comment from a collaborator. If true, then a timestamp of the comment is returned as well.
@@ -107,20 +109,20 @@ def get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, 
     if response.status_code != 200:
         get_requests_success = False
         return [], [], [], []
-    review_comments = response.json()
+    comments = response.json()
     
 
     commented_issues_map = {}
     commented_prs_map = {}
 
-    while len(review_comments) > 0:
-        for comment in review_comments:
+    while len(comments) > 0:
+        for comment in comments:
             # The number isn't readily available, so we have to extract it from a link. Example: 
             # "issue_url": "https://api.github.com/repos/EleonoraBorzis/group-composition-action/issues/10",
             # Similar for both pull requests and issues
             url = comment["issue_url"]
             search_term = "issues/"
-            number = url[url.index(search_term) + len(search_term) : ]
+            number = int(url[url.index(search_term) + len(search_term) : ])
             
             # Similarly it isn't readily available if it is an issue or a pull request. Example:
             # "html_url": "https://github.com/EleonoraBorzis/group-composition-action/pull/10#issuecomment-810912871",
@@ -130,7 +132,7 @@ def get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, 
 
             if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
                 new_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-                
+
                 if item_type == "pull":
                     if number in commented_prs_map:
                         previous_timestamp = commented_prs_map[number]
@@ -151,7 +153,7 @@ def get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, 
         if response.status_code != 200:
             get_requests_success = False
             return [], [], [], []
-        review_comments = response.json()
+        comments = response.json()
 
     commented_issues = []
     uncommented_issues = []
@@ -205,20 +207,16 @@ def get_commented_and_uncommented_prs(url, commented_prs, uncommented_prs):
     review_comments = response.json()
     
     commented_prs_map = {}
-    uncommented_prs_set = set()
     for pr, timestamp in commented_prs:
         commented_prs_map[pr["number"]] = timestamp
-    for pr in uncommented_prs:
-        uncommented_prs_set.add(pr["number"])
 
     while len(review_comments) > 0:
         for comment in review_comments:
             # The number isn't readily available, so we have to extract it from a link
             pr_url = comment["pull_request_url"]
             search_term = "pulls/"
-            pr_number = pr_url[pr_url.index(search_term) + len(search_term) : ]
+            pr_number = int(pr_url[pr_url.index(search_term) + len(search_term) : ])
             if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
-                uncommented_prs_set.remove(pr_number)
                 new_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
                 if pr_number in commented_prs_map:
                     previous_timestamp = commented_prs_map[pr_number]
@@ -363,14 +361,17 @@ def average_response_time(commented_objects, uncommented_objects):
 
     for item in uncommented_objects:
         created_date = datetime.datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-        today_formatted = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
-        not_responded_durations.append((today_formatted - created_date).total_seconds())
+        if item["closed_at"] is None:
+            end_date = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ")
+        else:
+            end_date = datetime.datetime.strptime(item["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
+        not_responded_durations.append((end_date - created_date).total_seconds())
 
     average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
     # Remove print statement
-    print("Average time until pull request is commented on by collaborator: ", average_responded_time)
-    print("Average time opened for pull requests without collaborator comments: ", average_not_responded_time)
+    print("Average time until issue/pull request is commented on by collaborator: ", average_responded_time)
+    print("Average time opened for issues/pull requests without collaborator comments: ", average_not_responded_time)
     return average_responded_time, average_not_responded_time
 
 def lizard(include_warnings=False):
@@ -396,20 +397,20 @@ def main():
     #url = "https://api.github.com/repo/" + str(repo_name)
 
     #dummy input
-    repo_name = "EleonoraBorzis/group-composition-action" #"jhy/jsoup"
+    repo_name = "KTH/devops-course" #"EleonoraBorzis/group-composition-action" #"jhy/jsoup"
     url = "https://api.github.com/repos/" + str(repo_name)
 
 
     issues, prs = get_non_collaborator_issues_and_pr(url)
     commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
     commented_pr_list, uncommented_pr_list = get_commented_and_uncommented_prs(url, preliminary_commented_pr_list, preliminary_uncommented_pr_list)
-    
 
     (pr_list, report)=unreviewed_pr(uncommented_pr_list)
     (issue_list, report) = unreviewed_issues(uncommented_issue_list)
     average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
     average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
     average_response_time(commented_pr_list, uncommented_pr_list)
+    average_response_time(commented_issue_list, uncommented_issue_list)
     #lizard(True)
 
     report = "Report"
