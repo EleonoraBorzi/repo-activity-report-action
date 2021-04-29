@@ -418,7 +418,8 @@ def main():
     repo_name = sys.argv[3]
 
     url = "https://api.github.com/repos/" + str(repo_name)
-    global headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+ git_token} 
+    global headers 
+    headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+ git_token} 
     #repo_name = "EleonoraBorzis/group-composition-action" 
     #url = "https://api.github.com/repos/" + str(repo_name)
 
