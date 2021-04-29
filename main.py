@@ -66,7 +66,6 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
     review_comments = response.json()
     
     # "By default, review comments are in ascending order by ID."
-    # I believe this means that we are given the older ones first?
     while len(review_comments) > 0:
         for comment in review_comments:
             if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
@@ -83,7 +82,6 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
             return collaborator_comment, comment_timestamp
         review_comments = response.json()
     
-    # Do we also count commit comments?
     if collaborator_comment and collaborator_review_comment:
         return True, min(comment_timestamp, review_comment_timestamp)
     elif collaborator_comment:
@@ -297,6 +295,7 @@ def get_non_collaborator_issues_and_pr(url):
     
     return issues, pull_requests
 
+# Writes the report as a comment on the issue with the issue number recieved from the user 
 def write_comment(git_token, repo_name, issue_number, report):
     print(repo_name)
     print(issue_number)
@@ -305,12 +304,13 @@ def write_comment(git_token, repo_name, issue_number, report):
     pr = repo.get_pull(int(issue_number))
     pr.create_issue_comment(report)
 
+# Recieves a list of pull_request and finds the ones with no comments and adds them to a list
 def unreviewed_pr(pr_list):
     pr_nr = []
     for item in pr_list:
         if (item["comments"] == 0):
             pr_nr.append(str(item['number']))
-    report = ("#### The number of unreviwed pull requests  is: " + str(len(pr_list))+ "\n")
+    report = ("#### The number of unreviwed pull requests is: " + str(len(pr_list))+ "\n")
     report = report + ("#### The unreviwed pull requests are: ")
     count = 0
     for i in pr_nr:
@@ -321,7 +321,7 @@ def unreviewed_pr(pr_list):
     report = report + "\n"
     return report
 
-
+# Recieves a list of issues and finds the ones with no comments and adds them to a list
 def unreviewed_issues(issue_list):
     issue_nr = []
     for item in issue_list:
@@ -343,7 +343,7 @@ def unreviewed_issues(issue_list):
 # Takes a list of either issues or pull requests as issue objects and returns the average durations of them being open
 # in two categories: the ones that are closed and the ones that are still open.
 # Here we don't differentiate between if a pull request was only closed or also merged (merged implies closed). 
-def average_close_time(issue_objects):
+def average_close_time(issue_objects, item_type):
     closed_durations = []
     open_durations = []
     for item in issue_objects:
@@ -359,8 +359,8 @@ def average_close_time(issue_objects):
     average_close_time = 0 if len(closed_durations) == 0 else float(sum(closed_durations)) / (len(closed_durations))
     average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
     
-    report = ("#### Average time until PR/Issue closed: " + str(int(average_close_time//86400)) + " days" + "\n")
-    report = report + ("#### Average time opened for still open PRs/Issues: " + str(int(average_still_open_time//86400)) + " days"  + "\n")
+    report = ("#### Average time until " + item_type + " closed: " + str(int(average_close_time//86400)) + " days" + "\n")
+    report = report + ("#### Average time opened for still open " + item_type + ": " + str(int(average_still_open_time//86400)) + " days"  + "\n")
     return report
 
 # The input is issues or pull requests as issue objects that are split over two lists.
@@ -368,7 +368,7 @@ def average_close_time(issue_objects):
 # The parameters are inteded to be used to split issues/pull request into those that have "eligible comments" and those that don't, 
 # and then this function calculate the average time from that the issue/pull request was created until the timestamp (representing the "eligible comment")
 # for the first list, and the average time from that the issue/pull request was created until today for the second list.
-def average_response_time(commented_objects, uncommented_objects):
+def average_response_time(commented_objects, uncommented_objects, item_type):
     responded_durations = []
     not_responded_durations = []
     
@@ -387,12 +387,13 @@ def average_response_time(commented_objects, uncommented_objects):
     average_responded_time = 0 if len(responded_durations) == 0 else float(sum(responded_durations)) / (len(responded_durations))
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
 
-    report = ("#### Average time until issue/pull request is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" +  "\n")
-    report = report + ("#### Average time opened for issue/pull requests without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
+    report = ("#### Average time until " + item_type + " is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" +  "\n")
+    report = report + ("#### Average time opened for " + item_type + " without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
     return report
 
-def lizard(include_warnings=False, head_path="./head"):
-    path = os.popen("cd head_path")
+# Runs Lizard where the repo was cloned (path "./head")
+def lizard(head_path, include_warnings=False):
+    path = os.popen("cd" + head_path)
     pwd = os.popen("pwd")
     print(pwd.read())
     stream = os.popen("lizard")
@@ -411,13 +412,18 @@ def lizard(include_warnings=False, head_path="./head"):
     return ("```` " + output[output.index(search_string) : ] + " ````")
    
 def main():
+    
     git_token = sys.argv[1]
     issue_number_to_post = sys.argv[2]
     repo_name = sys.argv[3]
 
     url = "https://api.github.com/repos/" + str(repo_name)
+    global headers 
+    headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+ git_token} 
+    #repo_name = "EleonoraBorzis/group-composition-action" 
+    #url = "https://api.github.com/repos/" + str(repo_name)
 
-
+    #get the list of issues and prs made from non collaborator users
     issues, prs = get_non_collaborator_issues_and_pr(url)
 
     commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
@@ -427,19 +433,27 @@ def main():
     os.mkdir(head_path)
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
 
+    #get report for unreviwed pull requests
     report = unreviewed_pr(uncommented_pr_list)
+    #get report for unreviwed issues 
     report = report + unreviewed_issues(uncommented_issue_list)
-    report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list)
-    report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list)
-    report = report + average_response_time(commented_pr_list, uncommented_pr_list)
-    report = report + average_response_time(commented_issue_list, uncommented_issue_list)
-    report = report  + "Lizard:" + "\n" + lizard(True, head_path)
+    #get report for average close time of pull request
+    report = report + average_close_time([pr for (pr, _) in commented_pr_list] + uncommented_pr_list, "PR")
+    #get report for average close time of issues
+    report = report + average_close_time([issue for (issue, _) in commented_issue_list] + uncommented_issue_list, "issues")
+    #get report for average response time of pull request
+    report = report + average_response_time(commented_pr_list, uncommented_pr_list, "PR")
+    #get report for average response time of issues
+    report = report + average_response_time(commented_issue_list, uncommented_issue_list, "issues")
+    report = report  + "Lizard:" + "\n" + lizard(head_path, True)
 
+    #If the github api sends a 200 response print an alternative report
     if not get_requests_success:
         prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
         prepend += "This might have happened because of too much data being requested.\n\n"
         report = prepend + report
     
+    #write commment to the Issue
     write_comment(git_token, repo_name, issue_number_to_post, report)
     print(report)
 
