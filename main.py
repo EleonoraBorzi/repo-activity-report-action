@@ -7,7 +7,7 @@ import os
 import datetime
 
 
-#headers = {"Accept": "application/vnd.github.v3+json"} 
+headers = {"Accept": "application/vnd.github.v3+json"} 
 get_requests_success = True # Is set to false if any API call gets a return code other than 200
 
 # Returns a bool indicating if there was at least one comment from a collaborator. If true, then a timestamp of the comment is returned as well.
