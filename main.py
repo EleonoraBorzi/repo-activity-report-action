@@ -297,8 +297,6 @@ def get_non_collaborator_issues_and_pr(url):
 
 # Writes the report as a comment on the issue with the issue number recieved from the user 
 def write_comment(git_token, repo_name, issue_number, report):
-    print(repo_name)
-    print(issue_number)
     g = Github(git_token)
     repo = g.get_repo(repo_name)
     pr = repo.get_pull(int(issue_number))
@@ -395,7 +393,6 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 def lizard(head_path, include_warnings=False):
     path = os.popen("cd" + head_path)
     pwd = os.popen("pwd")
-    print(pwd.read())
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
@@ -455,7 +452,6 @@ def main():
     
     #write commment to the Issue
     write_comment(git_token, repo_name, issue_number_to_post, report)
-    print(report)
 
 if __name__ == "__main__":
     main()
