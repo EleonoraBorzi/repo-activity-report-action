@@ -445,7 +445,7 @@ def main():
     report = report + average_response_time(commented_pr_list, uncommented_pr_list, "PR")
     #get report for average response time of issues
     report = report + average_response_time(commented_issue_list, uncommented_issue_list, "issues")
-    report = report  + "Lizard:" + "\n" + lizard(True, head_path)
+    report = report  + "Lizard:" + "\n" + lizard(head_path, True)
 
     #If the github api sends a 200 response print an alternative report
     if not get_requests_success:
