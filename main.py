@@ -394,7 +394,7 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 def lizard(head_path, include_warnings=False):
     path = os.popen("cd " + head_path)
     pwd = os.popen("pwd")
-    print(pwd)
+    print(pwd.read())
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
