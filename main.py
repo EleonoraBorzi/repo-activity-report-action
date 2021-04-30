@@ -405,7 +405,7 @@ def lizard(head_path, include_warnings=False):
             search_string = alternative_string1
         elif alternative_string2 in output:
             search_string = alternative_string2
-    return ("```\n" + output[output.index(search_string) : ] "\n```")
+    return ("```\n" + output[output.index(search_string) : ] + "\n```")
    
 def main():
     
