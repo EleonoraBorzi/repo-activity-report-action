@@ -395,6 +395,8 @@ def lizard(head_path, include_warnings=False):
     path = os.popen("cd" + " " + head_path)
     pwd = os.popen("pwd")
     print(pwd.read())
+    files = os.popen("ls")
+    print(files.read())
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
