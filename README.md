@@ -36,5 +36,6 @@ The user can decide how the action will be triggered, for example a new pull req
 - Average time opened for pull requests without collaborator comments
 - Lizard output (ex. NLOC, CCN, token, PARAM, length, etc)
 
-API call limit: This action will only work for repos that does not have a huge number of PR/Issues and comments, since the maximum amount of API request is 1000 requests per hour. 
+## Known limitations:  
+API call limit: The GitHub API puts a limit on how many get requests can be sent in a given time frame (the maximum amount of API request is 1000 requests per hour). This action sends one request for every 100 issues and pull request, one request for every 100 issue and pull request comments and one request for every 100 pull request review comments. Thus, if this total exceeds the API limit, not all requested information will be gathered by the action.
 
