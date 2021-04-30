@@ -21,7 +21,7 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
     params_comments = {"per_page":"100", "page":page_num_comments}
     response = requests.get(url=item["comments_url"], headers=headers, params=params_comments)
 
-    #If the API sends a 200 answer then return 
+    #If the API does not send a 200 answer then return 
     if response.status_code != 200:
         get_requests_success = False
         return collaborator_comment, comment_timestamp
@@ -64,7 +64,7 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
     params_comments = {"per_page":"100", "page":page_num_comments}
     response = requests.get(url=review_url, headers=headers, params=params_comments)
     
-    #If the API sends a 200 answer then return
+    #If the API does not send a 200 answer then return
     if response.status_code != 200:
         get_requests_success = False
         return collaborator_comment, comment_timestamp
@@ -405,7 +405,7 @@ def lizard(head_path, include_warnings=False):
             search_string = alternative_string1
         elif alternative_string2 in output:
             search_string = alternative_string2
-    return (output[output.index(search_string) : ])
+    return ("```\n" + output[output.index(search_string) : ] "\n```")
    
 def main():
     
