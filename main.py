@@ -367,7 +367,7 @@ def average_close_time(issue_objects, item_type):
     average_still_open_time = 0 if len(open_durations) == 0 else float(sum(open_durations)) / (len(open_durations))
     
     report = ("#### Average time until " + item_type + " closed: " + str(int(average_close_time//86400)) + " days" + "\n")
-    report = report + ("#### Average time opened for still open " + item_type + ": " + str(int(average_still_open_time//86400)) + " days"  + "\n")
+    report = report + ("#### Average time of how long " + item_type + " that are still open have been open : " + str(int(average_still_open_time//86400)) + " days"  + "\n")
     return report
 
 # The input is issues or pull requests as issue objects that are split over two lists.
@@ -395,7 +395,7 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
     average_not_responded_time = 0 if len(not_responded_durations) == 0 else float(sum(not_responded_durations)) / (len(not_responded_durations))
 
     report = ("#### Average time until " + item_type + " is commented on by collaborator: " + str(int(average_responded_time//86400)) + " days" +  "\n")
-    report = report + ("#### Average time opened for " + item_type + " without collaborator comments: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
+    report = report + ("#### Average time of how long " + item_type + " that are still open have been open: " + str(int(average_not_responded_time//86400)) + " days" +  "\n")
     return report
 
 # Runs Lizard where the repo was cloned (path "./head")
