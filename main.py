@@ -392,15 +392,15 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 
 # Runs Lizard where the repo was cloned (path "./head")
 def lizard(head_path, include_warnings=False):
-    path = os.popen("cd" + " " + "head")
-    pwd = os.popen("pwd")
-    print(pwd.read())
-    files = os.popen("ls")
-    print(files.read())
-    os.system('cmd /k "cd head"')
-    os.system('cmd /k "ls"')
+    #path = os.popen("cd" + " " + "head")
+    #pwd = os.popen("pwd")
+   # print(pwd.read())
+    #files = os.popen("ls")
+    #print(files.read())
+    #os.system('cmd /k "cd head"')
+   # os.system('cmd /k "ls"')
     
-    stream = os.popen("lizard")
+    stream = os.popen("lizard head")
     output = stream.read()
     search_string = "Total nloc"
     if include_warnings:
