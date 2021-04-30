@@ -23,9 +23,9 @@ jobs:
 The action has three inputs:
 - github-token: The GitHub secret token that gives access to several git functions.It also increase the limit of GitHub API calls. 
 - repo-name: The full name of the repo that is being analysed.
-- issue-number: The number of the issue where the user wants the report to be commented.
+- issue-number: The number of the issue where the user wants the report to be posted as a comment.
 
-The user can decided what the action will be triggered by, for example a new pull request or a new commment. The action will post a comment on the issue with the issue number given by the user. The data posted on the action is: 
+The user can decide how the action will be triggered, for example a new pull request or a new commment. The action will post a comment on the issue with the issue number given by the user. The data posted on the action is: 
 - The number of unreviwed issues 
 - A list of unreviwed issues
 - The number of unreviwed pull requests 
