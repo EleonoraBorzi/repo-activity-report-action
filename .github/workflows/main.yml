@@ -2,7 +2,7 @@
 name: Repo Activity Test
 on:
   schedule:
-    - cron: '0 8 30 * *'
+    - cron: '5 10 30 * *'
 jobs:
   build:
     runs-on: ubuntu-latest
