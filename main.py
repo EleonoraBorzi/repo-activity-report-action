@@ -400,7 +400,7 @@ def lizard(head_path, include_warnings=False):
     #os.system('cmd /k "cd head"')
    # os.system('cmd /k "ls"')
     
-    stream = os.popen("lizard head")
+    stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
     if include_warnings:
