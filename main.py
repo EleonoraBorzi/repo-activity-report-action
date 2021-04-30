@@ -435,7 +435,9 @@ def main():
  
     head_path = "./head"
     os.mkdir(head_path)
+    os.mkdir("./base")
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
+    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", "./base", branch="main")
 
     #get report for unreviwed pull requests
     report = unreviewed_pr(uncommented_pr_list)
