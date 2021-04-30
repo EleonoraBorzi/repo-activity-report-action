@@ -392,15 +392,7 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 
 # Runs Lizard where the repo was cloned (path "./head")
 def lizard(head_path, include_warnings=False):
-    #path = os.popen("cd" + " " + "head")
-    #pwd = os.popen("pwd")
-   # print(pwd.read())
-    #files = os.popen("ls")
-    #print(files.read())
-    #os.system('cmd /k "cd head"')
-   # os.system('cmd /k "ls"')
-    
-    stream = os.popen("lizard")
+    stream = os.popen("lizard " + head_path)
     output = stream.read()
     search_string = "Total nloc"
     if include_warnings:
@@ -413,7 +405,7 @@ def lizard(head_path, include_warnings=False):
             search_string = alternative_string1
         elif alternative_string2 in output:
             search_string = alternative_string2
-    return ("```` " + output[output.index(search_string) : ] + " ````")
+    return (output[output.index(search_string) : ])
    
 def main():
     
@@ -435,9 +427,8 @@ def main():
  
     head_path = "./head"
     os.mkdir(head_path)
-    os.mkdir("./base")
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
-    Repo.clone_from("https://" + git_token + "@github.com/" + "EleonoraBorzis/repo-activity-report-action" + ".git", "./base", branch="main")
+    
 
     #get report for unreviwed pull requests
     report = unreviewed_pr(uncommented_pr_list)
