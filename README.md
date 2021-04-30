@@ -35,3 +35,6 @@ The user can decide how the action will be triggered, for example a new pull req
 - Average time until pull request is commented on by collaborator
 - Average time opened for pull requests without collaborator comments
 - Lizard output (ex. NLOC, CCN, token, PARAM, length, etc)
+
+API call limit: This action will only work for repos that does not have a huge number of PR/Issues and comments, since the maximum amount of API request is 1000 requests per hour. 
+
