@@ -400,7 +400,7 @@ def lizard(head_path, include_warnings=False):
     #os.system('cmd /k "cd head"')
    # os.system('cmd /k "ls"')
     
-    stream = os.popen("lizard")
+    stream = os.popen("lizard head")
     output = stream.read()
     search_string = "Total nloc"
     if include_warnings:
@@ -437,7 +437,7 @@ def main():
     os.mkdir(head_path)
     os.mkdir("./base")
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
-    Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", "./base", branch="main")
+    Repo.clone_from("https://" + git_token + "@github.com/" + "EleonoraBorzis/repo-activity-report-action" + ".git", "./base", branch="main")
 
     #get report for unreviwed pull requests
     report = unreviewed_pr(uncommented_pr_list)
