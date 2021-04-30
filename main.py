@@ -21,22 +21,25 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
     params_comments = {"per_page":"100", "page":page_num_comments}
     response = requests.get(url=item["comments_url"], headers=headers, params=params_comments)
 
+    #If the API sends a 200 answer then return 
     if response.status_code != 200:
         get_requests_success = False
         return collaborator_comment, comment_timestamp
     payload_comments = response.json()
     
-    # "Issue Comments are ordered by ascending ID."
-    # I believe this means that we are given the older ones first?
+    #If the payload contains data check the issue comments, Issue Comments are ordered by ascending ID.
     while len(payload_comments) > 0:
         for comment in payload_comments:
+            #find comment made by collaborator or owner
             if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
                 collaborator_comment = True
                 comment_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
                 break
+        #If a collaborator comment is found then break
         if collaborator_comment:
             break
         page_num_comments += 1
+        #load the next page of data 
         params_comments = {"per_page":"100", "page":page_num_comments}
         response = requests.get(url=item["comments_url"], headers=headers, params=params_comments)
         if response.status_code != 200:
@@ -51,6 +54,7 @@ def get_first_collaborator_issue_comment(item : "json object of issue") -> "bool
 # The returned timestamp is of the earliest eligible comment. 
 def get_first_collaborator_pr_comment(url : str, item : "json object of pull request") -> "bool, datetime | None":
     global get_requests_success
+    #Find the first collaborator issue comment 
     collaborator_comment, comment_timestamp = get_first_collaborator_issue_comment(item)
 
     collaborator_review_comment = False
@@ -59,21 +63,25 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
     review_url = url + "/pulls/" + str(item["number"]) + "/comments"
     params_comments = {"per_page":"100", "page":page_num_comments}
     response = requests.get(url=review_url, headers=headers, params=params_comments)
-
+    
+    #If the API sends a 200 answer then return
     if response.status_code != 200:
         get_requests_success = False
         return collaborator_comment, comment_timestamp
     review_comments = response.json()
     
-    # "By default, review comments are in ascending order by ID."
+    #If the payload contains data check the review comments, by default, review comments are in ascending order by ID.
     while len(review_comments) > 0:
         for comment in review_comments:
+            #find comment made by collaborator or owner
             if comment["author_association"] == "COLLABORATOR" or comment["author_association"] == "OWNER":
                 collaborator_review_comment = True
                 review_comment_timestamp = datetime.datetime.strptime(comment["created_at"], "%Y-%m-%dT%H:%M:%SZ")
                 break
+        #If a collaborator comment is found then break
         if collaborator_review_comment:
             break
+        #load the next page of data 
         page_num_comments += 1
         params_comments = {"per_page":"100", "page":page_num_comments}
         response = requests.get(url=review_url, headers=headers, params=params_comments)
@@ -82,6 +90,7 @@ def get_first_collaborator_pr_comment(url : str, item : "json object of pull req
             return collaborator_comment, comment_timestamp
         review_comments = response.json()
     
+    #check which of the two comments (issue or review comment) was first created and return it
     if collaborator_comment and collaborator_review_comment:
         return True, min(comment_timestamp, review_comment_timestamp)
     elif collaborator_comment:
