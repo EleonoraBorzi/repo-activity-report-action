@@ -392,7 +392,7 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 
 # Runs Lizard where the repo was cloned (path "./head")
 def lizard(head_path, include_warnings=False):
-    path = os.popen("cd " + head_path)
+    path = os.popen("cd" + " " + head_path)
     pwd = os.popen("pwd")
     print(pwd.read())
     stream = os.popen("lizard")
