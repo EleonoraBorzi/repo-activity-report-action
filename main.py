@@ -392,8 +392,9 @@ def average_response_time(commented_objects, uncommented_objects, item_type):
 
 # Runs Lizard where the repo was cloned (path "./head")
 def lizard(head_path, include_warnings=False):
-    path = os.popen("cd" + head_path)
+    path = os.popen("cd " + head_path)
     pwd = os.popen("pwd")
+    print(pwd)
     stream = os.popen("lizard")
     output = stream.read()
     search_string = "Total nloc"
@@ -427,7 +428,7 @@ def main():
     commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
     commented_pr_list, uncommented_pr_list = get_commented_and_uncommented_prs(url, preliminary_commented_pr_list, preliminary_uncommented_pr_list)
  
-    head_path = " ./head"
+    head_path = "./head"
     os.mkdir(head_path)
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
 
