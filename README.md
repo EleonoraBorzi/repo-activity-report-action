@@ -21,7 +21,7 @@ jobs:
 ```
 
 The action has three inputs:
-- github-token: The GitHub secret token that gives access to several git functions.It also increase the limit of GitHub API calls. 
+- github-token: The GitHub secret token that gives access to several git functions. It also increases the limit of GitHub API calls. 
 - repo-name: The full name of the repo that is being analysed.
 - issue-number: The number of the issue where the user wants the report to be posted as a comment.
 
@@ -31,7 +31,7 @@ The user can decide how the action will be triggered, for example a new pull req
 - The number of unreviwed pull requests 
 - A list of unreviwed pull requests 
 - Average time until PR/Issue closed
-- Average time opened for still open PRs/Issues
+- Average time of how long PR/Issues that are still open have been open
 - Average time until pull request is commented on by collaborator
 - Average time opened for pull requests without collaborator comments
 - Lizard output (ex. NLOC, CCN, token, PARAM, length, etc)
