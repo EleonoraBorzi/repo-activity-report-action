@@ -313,14 +313,10 @@ def write_comment(git_token, repo_name, issue_number, report):
 
 # Recieves a list of pull_request and finds the ones with no comments and adds them to a list
 def unreviewed_pr(pr_list):
-    pr_nr = []
-    for item in pr_list:
-        if (item["comments"] == 0):
-            pr_nr.append(str(item['number']))
     report = ("#### The number of unreviwed pull requests is: " + str(len(pr_list))+ "\n")
     report = report + ("#### The unreviwed pull requests are: ")
     count = 0
-    for i in pr_nr:
+    for i in pr_list[number]:
         report= report + str(i)
         if(count<len(pr_list)-1):
             report= report + ","
@@ -330,14 +326,10 @@ def unreviewed_pr(pr_list):
 
 # Recieves a list of issues and finds the ones with no comments and adds them to a list
 def unreviewed_issues(issue_list):
-    issue_nr = []
-    for item in issue_list:
-        if (item["comments"] == 0):
-            issue_nr.append(str(item['number']))
     report = ("#### The number of unreviwed issues is: " + str(len(issue_list))+ "\n")
     report = report + ("#### The unreviwed issues are: ")
     count = 0
-    for i in issue_nr:
+    for i in issue_list[nummer]:
         report= report + str(i)
         if(count<len(issue_list)-1):
             report= report + ","
@@ -424,8 +416,8 @@ def main():
     repo_name = sys.argv[3]
 
     url = "https://api.github.com/repos/" + str(repo_name)
-    global headers 
     headers = {"Accept": "application/vnd.github.v3+json", "Authorization": "token "+ git_token} 
+    
     #repo_name = "EleonoraBorzis/group-composition-action" 
     #url = "https://api.github.com/repos/" + str(repo_name)
 
@@ -435,7 +427,7 @@ def main():
     commented_issue_list, uncommented_issue_list, preliminary_commented_pr_list, preliminary_uncommented_pr_list = get_commented_and_uncommmented_issues_and_preliminary_prs(url, issues, prs, repo_name)
     commented_pr_list, uncommented_pr_list = get_commented_and_uncommented_prs(url, preliminary_commented_pr_list, preliminary_uncommented_pr_list)
  
-    head_path = "./head"
+    head_path = " ./head"
     os.mkdir(head_path)
     Repo.clone_from("https://" + git_token + "@github.com/" + repo_name + ".git", head_path, branch="main")
 
@@ -453,7 +445,7 @@ def main():
     report = report + average_response_time(commented_issue_list, uncommented_issue_list, "issues")
     report = report  + "Lizard:" + "\n" + lizard(head_path, True)
 
-    #If the github api sends a 200 response print an alternative report
+    #If the github api ever sends a response that is not 200, then print an alternative report
     if not get_requests_success:
         prepend = "Some API calls to GitHub were unsuccessful, meaning this report might not include all requested data. "
         prepend += "This might have happened because of too much data being requested.\n\n"
